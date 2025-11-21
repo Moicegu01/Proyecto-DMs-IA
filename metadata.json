@@ -1,0 +1,5 @@
+{
+  "name": "Comparador de DMs (IA)",
+  "description": "Una aplicación para comparar la capacidad narrativa y de Dungeon Master de dos modelos de IA diferentes en una aventura paralela de Dungeons & Dragons.",
+  "requestFramePermissions": []
+}
