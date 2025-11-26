@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { GameSession } from '../types';
 import { getSavedGames, deleteGame } from '../services/storageService';
@@ -9,7 +8,6 @@ interface MainMenuProps {
 }
 
 // Updated to a Dark Fantasy / D&D style image (Dark forest/mist or Dragon vibe)
-// Replace this URL with your specific attached image URL if needed.
 const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop";
 
 export function MainMenu({ onCreateNew, onLoadGame }: MainMenuProps) {
@@ -20,10 +18,14 @@ export function MainMenu({ onCreateNew, onLoadGame }: MainMenuProps) {
   }, []);
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
+    // Detenemos la propagación para que no se abra la partida al borrarla
+    e.preventDefault();
     e.stopPropagation();
+    
     if (window.confirm('¿Estás seguro de que quieres borrar esta historia? No se podrá recuperar.')) {
       deleteGame(id);
-      setSavedGames(getSavedGames());
+      // Actualizamos el estado filtrando la partida eliminada para que desaparezca al instante
+      setSavedGames(prevGames => prevGames.filter(game => game.id !== id));
     }
   };
 
@@ -84,6 +86,12 @@ export function MainMenu({ onCreateNew, onLoadGame }: MainMenuProps) {
           </div>
 
           {/* Lista de Partidas */}
+          {savedGames.length === 0 && (
+            <div className="text-gray-600 text-center py-8 italic border border-dashed border-gray-800 rounded-lg">
+              No hay crónicas guardadas. Comienza tu viaje arriba.
+            </div>
+          )}
+
           {savedGames.map((game) => (
             <div 
               key={game.id}
@@ -105,7 +113,7 @@ export function MainMenu({ onCreateNew, onLoadGame }: MainMenuProps) {
                 
                 <button
                   onClick={(e) => handleDelete(game.id, e)}
-                  className="text-gray-600 hover:text-red-500 transition-colors p-2 -mt-2 -mr-2 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="relative z-10 text-gray-600 hover:text-red-500 transition-colors p-2 -mt-2 -mr-2 opacity-0 group-hover:opacity-100 focus:opacity-100"
                   title="Borrar partida"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

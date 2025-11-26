@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Message as MessageType } from '../types';
 

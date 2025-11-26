@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Chat } from '@google/genai';
 import { MainMenu } from './components/MainMenu';

@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Message as MessageType } from '../types';
 import { MessageComponent } from './Message';
