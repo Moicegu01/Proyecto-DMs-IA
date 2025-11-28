@@ -21,28 +21,24 @@ export default function App() {
 
   // -- INITIALIZATION LOGIC --
 
-  const initializeChats = (game: GameSession) => {
-    try {
-      const fullSystemPrompt = `Eres un Dungeon Master de D&D. El jugador es un ${game.charRace} ${game.charClass}. 
+  const createChatInstances = (game: GameSession) => {
+    const fullSystemPrompt = `Eres un Dungeon Master de D&D. El jugador es un ${game.charRace} ${game.charClass}. 
       Contexto de la aventura: ${game.prologue}.
       Tu objetivo es narrar una historia oscura, de acción y aventura. Sé descriptivo pero conciso.
       Mantén la coherencia con el historial proporcionado.`;
 
-      const dm1Session = startChatSession('gemini-2.5-flash', fullSystemPrompt, game.historyDM1);
-      const dm2Session = startChatSession('gemini-2.5-pro', fullSystemPrompt, game.historyDM2);
-      
-      setChatDM1(dm1Session);
-      setChatDM2(dm2Session);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al inicializar los DMs.');
-      console.error(e);
-    }
+    const dm1 = startChatSession('gemini-2.5-flash', fullSystemPrompt, game.historyDM1);
+    const dm2 = startChatSession('gemini-2.5-pro', fullSystemPrompt, game.historyDM2);
+    
+    return { dm1, dm2 };
   };
 
   // -- EVENT HANDLERS --
 
-  const handleCreateNewGame = (charClass: CharacterClass, charRace: CharacterRace, prologue: string) => {
+  const handleCreateNewGame = async (charClass: CharacterClass, charRace: CharacterRace, prologue: string) => {
+    setIsLoading(true);
+    setError(null);
+
     const newGame: GameSession = {
       id: Date.now().toString(),
       createdAt: Date.now(),
@@ -54,16 +50,65 @@ export default function App() {
       historyDM2: []
     };
     
-    setCurrentGame(newGame);
-    saveGame(newGame); 
-    initializeChats(newGame);
-    setView('playing');
+    // 1. Create instances
+    let dm1, dm2;
+    try {
+      const chats = createChatInstances(newGame);
+      dm1 = chats.dm1;
+      dm2 = chats.dm2;
+      setChatDM1(dm1);
+      setChatDM2(dm2);
+      setCurrentGame(newGame);
+      // Switch view immediately so user sees loading state
+      setView('playing');
+    } catch (e) {
+      setError("Error al inicializar la IA.");
+      setIsLoading(false);
+      return;
+    }
+
+    // 2. Trigger Initial Narration automatically
+    const startPrompt = "Comienza la aventura narrando la escena inicial basada en el prólogo.";
+    
+    try {
+      const [responseDM1, responseDM2] = await Promise.all([
+        dm1.sendMessage({ message: startPrompt }),
+        dm2.sendMessage({ message: startPrompt })
+      ]);
+
+      const modelMessageDM1: Message = {
+        role: 'model',
+        parts: [{ text: responseDM1.text || "..." }],
+      };
+      const modelMessageDM2: Message = {
+        role: 'model',
+        parts: [{ text: responseDM2.text || "..." }],
+      };
+
+      // Update game history with the intro
+      const updatedGame = { ...newGame };
+      updatedGame.historyDM1 = [modelMessageDM1];
+      updatedGame.historyDM2 = [modelMessageDM2];
+      
+      setCurrentGame(updatedGame);
+      saveGame(updatedGame);
+    } catch (e) {
+      setError("Error generando la introducción: " + (e instanceof Error ? e.message : "Desconocido"));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLoadGame = (game: GameSession) => {
-    setCurrentGame(game);
-    initializeChats(game);
-    setView('playing');
+    try {
+        const { dm1, dm2 } = createChatInstances(game);
+        setChatDM1(dm1);
+        setChatDM2(dm2);
+        setCurrentGame(game);
+        setView('playing');
+    } catch (e) {
+        setError("Error al cargar la partida.");
+    }
   };
 
   const handleBackToMenu = () => {
@@ -146,7 +191,7 @@ export default function App() {
       )}
       
       {/* Main layout adjusts based on view */}
-      <main className={`flex-grow flex flex-col relative overflow-hidden ${view === 'menu' ? 'h-screen' : 'p-4 md:p-6 items-center justify-center'}`}>
+      <main className={`flex-grow flex flex-col relative overflow-hidden ${view === 'menu' ? 'h-screen' : 'h-[calc(100vh-80px)] p-4 md:p-6 items-center justify-center'}`}>
         
         {error && (
             <div className="absolute top-0 left-0 right-0 z-[60] bg-red-900/90 border-b border-red-600 text-white px-4 py-2 text-center">
