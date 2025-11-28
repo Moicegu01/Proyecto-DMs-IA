@@ -4,7 +4,7 @@ import { MainMenu } from './components/MainMenu';
 import { CreateGameScreen } from './components/CreateGameScreen';
 import { GameScreen } from './components/GameScreen';
 import { startChatSession } from './services/geminiService';
-import { saveGame } from './services/storageService';
+import { saveGame, downloadGameLogs } from './services/storageService';
 import { Message, GameSession, CharacterClass, CharacterRace } from './types';
 
 type AppView = 'menu' | 'create' | 'playing';
@@ -171,7 +171,7 @@ export default function App() {
       {view !== 'menu' && (
         <header className="p-4 md:p-6 flex justify-between items-center border-b border-[#333] bg-[#0a0a0a] relative shadow-lg z-50">
           <div className="flex items-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#e0e0e0] font-['Cinzel_Decorative'] tracking-wider text-shadow">
+              <h1 className="text-xl md:text-3xl font-bold text-[#e0e0e0] font-['Cinzel_Decorative'] tracking-wider text-shadow">
               Comparador de DMs
               </h1>
               <span className="hidden md:inline-block px-2 py-1 bg-[#8a0000] text-[10px] font-bold rounded text-white tracking-widest">
@@ -179,22 +179,31 @@ export default function App() {
               </span>
           </div>
           
-          {view === 'playing' && (
-            <button
-              onClick={handleBackToMenu}
-              className="secondary-btn px-4 py-2 rounded-md text-sm transition-all duration-200"
-            >
-              Menú Principal
-            </button>
+          {view === 'playing' && currentGame && (
+            <div className="flex gap-2 md:gap-4">
+                <button
+                onClick={() => downloadGameLogs(currentGame)}
+                className="secondary-btn px-3 py-1 md:px-4 md:py-2 rounded-md text-xs md:text-sm transition-all duration-200 border-dashed border-gray-600 hover:border-gray-400"
+                title="Descargar registro de la partida para análisis"
+                >
+                Exportar Historial
+                </button>
+                <button
+                onClick={handleBackToMenu}
+                className="secondary-btn px-3 py-1 md:px-4 md:py-2 rounded-md text-xs md:text-sm transition-all duration-200"
+                >
+                Menú Principal
+                </button>
+            </div>
           )}
         </header>
       )}
       
       {/* Main layout adjusts based on view */}
-      <main className={`flex-grow flex flex-col relative overflow-hidden ${view === 'menu' ? 'h-screen' : 'h-[calc(100vh-80px)] p-4 md:p-6 items-center justify-center'}`}>
+      <main className={`flex-grow flex flex-col relative overflow-hidden ${view === 'menu' ? 'h-screen' : 'h-[calc(100vh-70px)] md:h-[calc(100vh-80px)] p-2 md:p-6 items-center justify-center'}`}>
         
         {error && (
-            <div className="absolute top-0 left-0 right-0 z-[60] bg-red-900/90 border-b border-red-600 text-white px-4 py-2 text-center">
+            <div className="absolute top-0 left-0 right-0 z-[60] bg-red-900/90 border-b border-red-600 text-white px-4 py-2 text-center text-sm md:text-base">
                 <strong className="font-bold font-serif">Fallo Crítico: </strong>
                 <span className="inline">{error}</span>
             </div>

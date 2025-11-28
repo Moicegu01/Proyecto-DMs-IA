@@ -1,4 +1,4 @@
-import { GoogleGenAI, Chat } from "@google/genai";
+import { GoogleGenAI, Chat, Content } from "@google/genai";
 import { Message } from '../types';
 
 let ai: GoogleGenAI | null = null;
@@ -15,11 +15,19 @@ function getAiClient(): GoogleGenAI {
 
 export function startChatSession(modelName: string, systemInstruction: string, history: Message[]): Chat {
   const generativeAi = getAiClient();
+  
+  // Transformamos el historial almacenado al formato estricto que espera el SDK de Gemini
+  // Esto asegura que la "memoria" del modelo (contexto) sea perfecta.
+  const sdkHistory: Content[] = history.map(msg => ({
+    role: msg.role,
+    parts: msg.parts.map(p => ({ text: p.text }))
+  }));
+
   return generativeAi.chats.create({
     model: modelName,
     config: {
       systemInstruction,
     },
-    history,
+    history: sdkHistory,
   });
 }
